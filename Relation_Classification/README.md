@@ -1,4 +1,4 @@
-Establishing Commonsense Knowledge Paths between Concepts Via Relation Classification
+# Establishing Commonsense Knowledge Paths between Concepts Via Relation Classification
 
 This Readme explains the code for running COREC-LM for predicting direct relations between pairs of concepts, as described in our paper (Becker et al. 2021). COREC-LM is part of our framework CO-NNECT, which we propose for enriching texts with commonsense knowledge in the form of high-quality single- and multi-hop knowledge paths between concepts in texts. With the following code, you can generate single-hop commonsense knowledge paths between concepts. The code for generating multi-hop knowledge paths between concepts from texts can be found in the Forwardchaining directory of this repository.
 
