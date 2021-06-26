@@ -1,7 +1,7 @@
 #!/usr/bin/sh
 ## declare an array variable
 	
-declare -a arr=("xIntent" "xNeed" "xEffect" "xReact" "xWant" "oReact" "oEffect" "oWant")
+declare -a arr=("xAttr" "xIntent" "xNeed" "xEffect" "xReact" "xWant" "oReact" "oEffect" "oWant")
 
 ## now loop through the above array
 for i in "${arr[@]}"
@@ -11,7 +11,6 @@ do
    sh fine_tune_rel.sh atomic_train_nn_5k_per_prefix_${i}_other \
 		    atomic_validation_nn_1k_per_prefix_${i}_other \
 		    labels_${i}.txt
-   break
 done
 
 # You can access them using echo "${arr[0]}", "${arr[1]}" also
