@@ -91,16 +91,17 @@ class RelationData(Dataset):
         self.stoi = label_map
         self.itos = {i: l for l, i in label_map.items()}
         sources = [s.strip('\n').split() for s in open(path + ".src", "r").readlines()]
+        #tttt
         if targets_exit:
             targets = [int(s.strip("\n")) for s in open(path + ".trg").readlines()]
             for s, i in zip(sources, targets):
                 if 0 < len(s) <= max_len:
-                    self.sources.append(tokenizer.encode_plus(s, max_length=max_len, is_split_into_words=True, pad_to_max_length=True,return_tensors="pt"))
+                    self.sources.append(tokenizer(s, max_length=max_len, is_split_into_words=True, pad_to_max_length=True, return_tensors="pt"))
                     self.labels.append(i)
         else:
             for s in sources:
                 if 0 < len(s) <= max_len:
-                    self.sources.append(tokenizer.encode_plus(s, max_length=max_len, is_split_into_words=True, pad_to_max_length=True,return_tensors="pt"))
+                    self.sources.append(tokenizer(s, max_length=max_len, is_split_into_words=True, pad_to_max_length=True,return_tensors="pt"))
 
 
     def __len__(self):
@@ -941,11 +942,19 @@ def main():
         cache_dir=args.cache_dir,
     )
     args.model_type = config.model_type
-    tokenizer = AutoTokenizer.from_pretrained(
-        args.tokenizer_name if args.tokenizer_name else args.model_name_or_path,
-        do_lower_case=args.do_lower_case,
-        cache_dir=args.cache_dir,
-    )
+    if config.model_type in {"gpt2", "roberta"}:
+        tokenizer = AutoTokenizer.from_pretrained(
+            args.tokenizer_name if args.tokenizer_name else args.model_name_or_path,
+            do_lower_case=args.do_lower_case,
+            cache_dir=args.cache_dir,
+            add_prefix_space=True,
+        )
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(
+            args.tokenizer_name if args.tokenizer_name else args.model_name_or_path,
+            do_lower_case=args.do_lower_case,
+            cache_dir=args.cache_dir,
+        )
     model = AutoModelForSequenceClassification.from_pretrained(
         args.model_name_or_path,
         from_tf=bool(".ckpt" in args.model_name_or_path),

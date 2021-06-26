@@ -7,10 +7,11 @@ declare -a arr=("xAttr" "xIntent" "xNeed" "xEffect" "xReact" "xWant" "oReact" "o
 for i in "${arr[@]}"
 do
    echo "$i"
-   # or do whatever with individual element of the array
-   sh fine_tune_rel.sh atomic_train_nn_5k_per_prefix_${i}_other \
-		    atomic_validation_nn_1k_per_prefix_${i}_other \
-		    labels_${i}.txt
+   if [ $1 = $i ] || [ -z "$1" ]; then
+	   sh run_fine_tune.sh atomic_train_nn_5k_per_prefix_${i}_other \
+			    atomic_validation_nn_1k_per_prefix_${i}_other \
+			    labels_${i}.txt
+   fi
 done
 
 # You can access them using echo "${arr[0]}", "${arr[1]}" also

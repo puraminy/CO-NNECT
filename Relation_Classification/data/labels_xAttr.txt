@@ -1,2 +1,2 @@
-oWant   0
+xAttr   0
 other   1

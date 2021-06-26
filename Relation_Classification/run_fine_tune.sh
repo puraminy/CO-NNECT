@@ -28,6 +28,6 @@ python fine_tune_cnRel.py --data_dir $DATA_DIR \
 --num_train_epochs $NUM_EPOCHS \
 --seed $SEED \
 --do_eval \
+--do_train \
 #--evaluate_during_training \
-#--do_train \
 #--no_cuda
