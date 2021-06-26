@@ -3,14 +3,15 @@ import glob
 import logging
 import os
 import random
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 import numpy as np
 import torch
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
-
+import csv
+from pathlib import Path
 from torch.nn import BCEWithLogitsLoss
 
 from transformers import (
@@ -32,7 +33,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 logger = logging.getLogger(__name__)
 
-LABEL_FILE = 'labels-add-random.txt'
+LABEL_FILE = os.environ["LABEL_FILE"]  #'labels.txt'
 
 def set_seed(args):
     random.seed(args.seed)
@@ -93,15 +94,13 @@ class RelationData(Dataset):
         if targets_exit:
             targets = [int(s.strip("\n")) for s in open(path + ".trg").readlines()]
             for s, i in zip(sources, targets):
-                if 2 < len(s) <= max_len:
-                    self.sources.append(
-                        tokenizer.encode_plus(s, max_length=max_len, pad_to_max_length=True, return_tensors="pt"))
+                if 0 < len(s) <= max_len:
+                    self.sources.append(tokenizer.encode_plus(s, max_length=max_len, is_split_into_words=True, pad_to_max_length=True,return_tensors="pt"))
                     self.labels.append(i)
         else:
             for s in sources:
-                if 2 < len(s) <= max_len:
-                    self.sources.append(
-                        tokenizer.encode_plus(s, max_length=max_len, pad_to_max_length=True, return_tensors="pt"))
+                if 0 < len(s) <= max_len:
+                    self.sources.append(tokenizer.encode_plus(s, max_length=max_len, is_split_into_words=True, pad_to_max_length=True,return_tensors="pt"))
 
 
     def __len__(self):
@@ -124,7 +123,7 @@ class MultiRelationData(Dataset):
         targets = [s.strip("\n") for s in open(path + ".trg").readlines()]
         for s, labels in zip(sources, targets):
             if len(s) <= max_len:
-                self.sources.append(tokenizer.encode_plus(s, max_length=max_len, pad_to_max_length=True,return_tensors="pt"))
+                self.sources.append(tokenizer.encode_plus(s, is_split_into_words=True, max_length=max_len, pad_to_max_length=True,return_tensors="pt"))
                 label_list = [int(l) for l in labels.split(',') ]
                 one_hot_targets = np.zeros(len(label_map))
                 for i in label_list:
@@ -140,7 +139,6 @@ class MultiRelationData(Dataset):
 
     def __getitem__(self, i):
         return self.sources[i]["input_ids"].squeeze(), self.sources[i]["attention_mask"].squeeze(), torch.tensor(self.labels[i])
-
 
 def train(args, train_dataset, model, tokenizer, eval_dataset=None,label_map=None):
     """ Train the model """
@@ -245,6 +243,7 @@ def train(args, train_dataset, model, tokenizer, eval_dataset=None,label_map=Non
             model.train()
             #print(" before len batch", len(batch), batch)
             batch = tuple(t.to(args.device) for t in batch)
+            #batch = tuple(t.to(args.device) for t in batch[0])
             #print(" after len batch", len(batch), batch)
             inputs = {"input_ids": batch[0], "attention_mask": batch[1], "labels": batch[2]}
             if args.model_type != "distilbert":
@@ -570,10 +569,30 @@ def evaluate(args, model, eval_dataset, label_map, all_logits=True, prefix=""):
 
     #print("preds shape", preds.shape)
     preds_ids = np.argmax(preds, axis=1)
+    i_to_label = {i:l for i,l in label_map.items()}
+    print(i_to_label)
+    test_path = os.path.join(args.data_dir, args.test_data)
     if 'labels' in inputs and out_label_ids is not None:
         result = simple_accuracy(preds_ids, out_label_ids)
         labels = [i for i,l in label_map.items()]
         target_names = [l for i,l in label_map.items()]
+        pred_fname = f"{eval_output_dir}/pred_predictions"
+        sources = [s for s in open(test_path + ".src", "r").read().split('\n')]
+        targets = [i_to_label[int(s.strip("\n"))] for s in open(test_path + ".trg").readlines()]
+        with open(pred_fname, "w") as f:
+            for pred in preds_ids:
+                pred = i_to_label[pred]
+                print(pred, file=f)
+        target_fname = f"{eval_output_dir}/dev_targets"
+        input_fname = f"{eval_output_dir}/dev_inputs"
+        if not Path(target_fname).is_file():
+            with open(input_fname, "w") as inp_file:
+                with open(target_fname, "w") as target_file:
+                    for inp, target in zip(sources,targets):
+                        print(inp, file=inp_file)
+                        print(target, file=target_file)
+
+
         result_report = classification_report(preds_ids,out_label_ids, labels=labels, target_names=target_names)
         #print("result_report", result_report)
         if eval_loss != 0.0 and nb_eval_steps != 0:
@@ -790,9 +809,9 @@ def main():
         "--do_lower_case", action="store_true", help="Set this flag if you are using an uncased model."
     )
 
-    parser.add_argument("--per_gpu_train_batch_size", default=128, type=int, help="Batch size per GPU/CPU for training.")
+    parser.add_argument("--per_gpu_train_batch_size", default=32, type=int, help="Batch size per GPU/CPU for training.")
     parser.add_argument(
-        "--per_gpu_eval_batch_size", default=128, type=int, help="Batch size per GPU/CPU for evaluation."
+        "--per_gpu_eval_batch_size", default=32, type=int, help="Batch size per GPU/CPU for evaluation."
     )
     parser.add_argument(
         "--gradient_accumulation_steps",
@@ -1002,30 +1021,32 @@ def main():
 
             if all_logits:
                     prefix += "_all_preds"
-            predict_output_file = os.path.join(args.output_dir, str(global_step) + prefix + "_predict_output.txt")
+            predict_output_file = os.path.join(args.output_dir, str(global_step) + prefix + "_predict_output.tsv")
             sources = [s for s in open(test_path + ".src", "r").read().split('\n')]
             targets = [i_to_label[int(s.strip("\n"))] for s in open(test_path + ".trg").readlines()]
 
             with open(predict_output_file,"w") as f:
+                tsvout = csv.writer(f, delimiter="\t")
                 width_s = max([len(s) for s in sources]) + 2
                 width_t = max([len(t) for t in targets]) + 2
                 headers = ["input_concepts", "gold_label", "predictions"]
                 report = headers[0] + " "*(width_s - len(headers[0])) + \
                                            headers[1] + " "*(width_t - len(headers[1])) + headers[2]
-                report += '\n\n'
+                #report += '\n\n'
+                tsvout.writerow(headers)
                 for s,t,p in zip(sources, targets, result["multi_predictions"]):
-                    row = s + " "*(width_s - len(s)) + \
-                                           t + " "*(width_t - len(t)) + str(p)
-                    report += row
-                    report +="\n"
-                f.write(report)
+                    #row = s + " "*(width_s - len(s)) + \
+                    #                       t + " "*(width_t - len(t)) + str(p)
+                #    report += row
+                    tsvout.writerow([s,t,p])
+                #    report +="\n"
+                #f.write(report)
             result = dict((k + "_{}".format(global_step), v) for k, v in result.items())
 
             results.update(result)
 
     if args.do_eval_multilabels and args.local_rank in [-1, 0]:
 
-        import csv
         thresholds_dict = dict()
 
         def to_float(str_num):
@@ -1103,7 +1124,6 @@ def main():
 
     if args.do_multiple_prediction and args.local_rank in [-1, 0]:
 
-        import csv
         thresholds_dict = dict()
 
         def to_float(str_num):

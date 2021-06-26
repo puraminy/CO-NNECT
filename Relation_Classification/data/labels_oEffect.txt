@@ -1,0 +1,2 @@
+oEffect   0
+other   1
