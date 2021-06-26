@@ -1,6 +1,7 @@
 #!/usr/bin/sh
 ## declare an array variable
-	
+#test
+
 declare -a arr=("xAttr" "xIntent" "xNeed" "xEffect" "xReact" "xWant" "oReact" "oEffect" "oWant")
 
 ## now loop through the above array

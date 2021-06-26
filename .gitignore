@@ -2,6 +2,8 @@
 .idea
 Relation_Classification/atomic*/*
 Relation_Classification/output/*
+Relation_Classification/runs/*
+runs/*
 *.iml
 *.pyc
 *.ipynb
