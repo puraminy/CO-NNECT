@@ -5,12 +5,12 @@ export LABEL_FILE=$3
 export MAX_LENGTH=122
 export LEARNING_RATE=2e-5
 export WEIGHT_DECAY=0.01
-export BERT_MODEL=distilbert-base-uncased
+export MODEL_NAME=roberta-base
 export NUM_EPOCHS=3
 export SEED=2
 export OUTPUT_DIR_NAME=$1
 export CURRENT_DIR=${PWD}
-export OUTPUT_DIR=${CURRENT_DIR}/${OUTPUT_DIR_NAME}
+export OUTPUT_DIR=${CURRENT_DIR}/output/${MODEL_NAME}/${OUTPUT_DIR_NAME}
 
 # Make output directory if it doesn't exist
 mkdir -p $OUTPUT_DIR
@@ -20,7 +20,7 @@ export PYTHONPATH="../":"${PYTHONPATH}"
 python fine_tune_cnRel.py --data_dir $DATA_DIR \
 --train_data $TRAIN_DATA \
 --test_data $TEST_DATA \
---model_name_or_path $BERT_MODEL \
+--model_name_or_path $MODEL_NAME \
 --output_dir $OUTPUT_DIR \
 --max_seq_length  $MAX_LENGTH \
 --learning_rate $LEARNING_RATE \

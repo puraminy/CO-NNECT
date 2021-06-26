@@ -1,6 +1,7 @@
 *.pickle
 .idea
 Relation_Classification/atomic*/*
+Relation_Classification/output/*
 *.iml
 *.pyc
 *.ipynb
