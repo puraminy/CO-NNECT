@@ -147,7 +147,12 @@ def train(args, train_dataset, model, tokenizer, eval_dataset=None,label_map=Non
         tb_writer = SummaryWriter()
 
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
-    train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
+    if args.local_rank == -1:
+        logger.info("=========== Random Sampler ===========")
+        train_sampler = RandomSampler(train_dataset)  
+    else: 
+        train_sampler = DistributedSampler(train_dataset)
+
     train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
 
     if args.max_steps > 0:
@@ -486,7 +491,7 @@ def evaluate(args, model, eval_dataset, label_map, all_logits=True, prefix=""):
    # eval_task_names = (args.task_name,)
     #softmax = torch.nn.Softmax(dim=-1)
 
-    eval_output_dir = args.output_dir
+    eval_output_dir = os.path.join(args.output_dir, args.test_data)
 
     results = {}
     #for eval_task, eval_output_dir in zip(eval_task_names, eval_outputs_dirs):
@@ -569,10 +574,10 @@ def evaluate(args, model, eval_dataset, label_map, all_logits=True, prefix=""):
             #if args.output_mode == "classification":
 
     #print("preds shape", preds.shape)
+    test_path = os.path.join(args.data_dir, args.test_data)
     preds_ids = np.argmax(preds, axis=1)
     i_to_label = {i:l for i,l in label_map.items()}
     print(i_to_label)
-    test_path = os.path.join(args.data_dir, args.test_data)
     if 'labels' in inputs and out_label_ids is not None:
         result = simple_accuracy(preds_ids, out_label_ids)
         labels = [i for i,l in label_map.items()]

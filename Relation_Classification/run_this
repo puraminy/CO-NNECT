@@ -1,0 +1,20 @@
+#!/usr/bin/sh
+## declare an array variable
+#test
+if [ -z "$2" ]; then
+   ehco "agument 2, tag, is required"
+   exit 1
+fi
+if [ -z "$3" ]; then
+	lang="en"
+else
+	lang="${3}"
+fi
+sh run_fine_tune.sh $1 \
+		    ${lang}_${2}_1k_validation_random \
+		    labels.txt
+
+
+
+
+
