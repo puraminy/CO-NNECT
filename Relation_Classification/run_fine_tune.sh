@@ -38,6 +38,6 @@ python fine_tune_cnRel.py --data_dir $DATA_DIR \
 --per_gpu_eval_batch_size $BATCH_SIZE \
 --seed $SEED \
 --do_eval \
-#--do_train \
+--do_train \
 #--evaluate_during_training \
 #--no_cuda

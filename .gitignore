@@ -1,4 +1,6 @@
 *.pickle
+*.src
+*.trg
 .idea
 Relation_Classification/atomic*/*
 Relation_Classification/output/*

@@ -11,7 +11,7 @@ else
 	lang="${3}"
 fi
 sh run_fine_tune.sh $1 \
-		    ${lang}_${2}_1k_validation_random \
+		    ${lang}_validation_${2}_1k \
 		    labels.txt
 
 

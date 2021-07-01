@@ -3,29 +3,36 @@
 #test
 
 declare -a arr=("xAttr" "xIntent" "xNeed" "xEffect" "xReact" "xWant" "oReact" "oEffect" "oWant")
-
 while [ $# -gt 0 ]; do
 
-	if [[ $1 == *"--"* ]]; then
-		param="${1/--/}"
-		declare $param="$2"
-		# echo $1 $2 // Optional to see the parameter:value result
-	fi
+        if [[ $1 == *"--"* ]]; then
+                param="${1/--/}"
+                value="${param##*=}"
+                param="${param%%=*}"
+                declare $param="$value"
+                echo variable name: $param 
+                eval echo variable content: '$'"$param"
+        fi
 
-	shift
+        shift
 done
+valid=${valid:-validation}
+lang=${lang:-en}
+size=${size:-5k}
+tag=${tag:-all}
 
 ## now loop through the above array
 if [ $1 = "-h" ]; then
-    echo  "run --tag --lang --size --name"
+    echo  "run --tag --lang --size --valid"
    exit 1 
 fi
+echo  "run --tag=${tag} --lang=${lang} --size=${size} --valid=${valid}"
 for i in "${arr[@]}"
 do
    echo "$i"
    if [ -z "$tag" ] || [ $tag = $i ] || [ $tag = "all" ]; then
-	   sh run_fine_tune.sh ${lang}_train_${i}_other_${size}_per_prefix \
-			    ${lang}_${i}_1k_validation_${name} \
+	   sh run_fine_tune.sh ${lang}_train_${i}_${size} \
+			    ${lang}_${valid}_${i}_1k \
 			    labels.txt
    fi
 done

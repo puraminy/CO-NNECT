@@ -22,7 +22,7 @@ ulist = ["other", "xAttr", "xIntent", "xNeed", "xWant", "xReact", "xEffect", "oR
     help=""
 )
 @click.option(
-    "--out",
+    "--prefix",
     default="",
     type=str,
     help=""
@@ -39,25 +39,29 @@ ulist = ["other", "xAttr", "xIntent", "xNeed", "xWant", "xReact", "xEffect", "oR
     type=str,
     help=""
 )
-def main(path, fname, size, out, tag, lang):
-    if fname == "all":
+@click.option(
+    "--mix",
+    "-m",
+    is_flag=True,
+    help=""
+)
+def main(path, fname, size, prefix, tag, lang, mix):
+    if "#tag" in fname:
         for lang in ["en", "fa"]:
             for t in ulist[1:]:
-                conv(path, "", tag=t, lang=lang, size=size, out=out)
+                conv(path, fname.replace("#tag", t), tag=t, 
+                        lang=lang, size=size, prefix=prefix, mix=mix)
     else:
-        conv(path, fname, size, out, tag, lang)
+        conv(path, fname, size, prefix, tag, lang, mix)
 
-def conv(path, fname, size, out="", tag="", lang="en"):
-    other = ""
-    if fname:
-        tag_fname = path + "/" + fname
-    else:
-        tag_fname = path + f'/en_fa_{tag}.tsv'
-    other_fname = valid_dir + "/en_fa_" + tag + "_other.tsv"
+def conv(path, fname, size, prefix="", tag="", lang="en", mix=False):
+    tag_fname = path + "/" + fname
     tag_df = pd.read_table(tag_fname)
-    other_df = pd.read_table(other_fname)
 
-    tag_df = pd.concat([tag_df, other_df], ignore_index=True)
+    if mix:
+        other_fname = valid_dir + f"/en_fa_validation_{tag}_other_1k.tsv"
+        other_df = pd.read_table(other_fname)
+        tag_df = pd.concat([tag_df, other_df], ignore_index=True)
 
     tag_df = tag_df.groupby("prefix").sample(n=size, random_state=1)
     tag_df = tag_df.sample(frac=1, random_state=1)
@@ -88,10 +92,10 @@ def conv(path, fname, size, out="", tag="", lang="en"):
                 print(l, file= trg)
 
             print("max length:", _max)
-    if not out:
+    if not prefix:
         out = lang + "_" + tag + "_" + tn
     else:
-        out = lang + "_" + tag + "_" + tn + "_" + out
+        out = lang + "_" + prefix + "_" + tag + "_" + tn  
     out = dest + "/" + out
     print(out, ":", len(tag_df))
     convert(tag_df, out) 
