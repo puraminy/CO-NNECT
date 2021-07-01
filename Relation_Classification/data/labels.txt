@@ -1,0 +1,10 @@
+other   0
+xAttr   1
+xIntent   2
+xNeed   3
+xWant   4
+xReact   5
+xEffect   6
+oReact   7
+oEffect   8
+oWant   9
