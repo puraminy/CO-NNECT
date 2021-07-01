@@ -1,2 +1,0 @@
-oWant   0
-other   1

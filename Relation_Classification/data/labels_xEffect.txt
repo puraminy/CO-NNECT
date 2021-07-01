@@ -1,2 +1,0 @@
-other   0
-xEffect   1
